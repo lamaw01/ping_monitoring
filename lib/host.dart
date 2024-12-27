@@ -1,5 +1,4 @@
 class Host {
-  int id;
   String hostname;
   String ip;
   bool status;
@@ -7,7 +6,6 @@ class Host {
   DateTime lastOffline;
 
   Host({
-    required this.id,
     required this.hostname,
     required this.ip,
     required this.lastOnline,

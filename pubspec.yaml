@@ -39,6 +39,7 @@ dependencies:
   process_run: ^1.2.2+1
   intl: ^0.20.1
   jiffy: ^6.3.2
+  realm: ^20.0.0
 
 dev_dependencies:
   flutter_test:

@@ -4,7 +4,6 @@ import 'package:ping_monitoring/host.dart';
 class HostProvider with ChangeNotifier {
   final List<Host> _hosts = <Host>[
     Host(
-      id: 1,
       hostname: 'Google.com',
       ip: 'google.com',
       status: true,
@@ -12,7 +11,6 @@ class HostProvider with ChangeNotifier {
       lastOffline: DateTime.now(),
     ),
     Host(
-      id: 2,
       hostname: 'Parasat AD Main',
       ip: '172.21.3.39',
       status: true,
@@ -20,7 +18,6 @@ class HostProvider with ChangeNotifier {
       lastOffline: DateTime.now(),
     ),
     Host(
-      id: 3,
       hostname: 'Archive Server',
       ip: '172.16.3.66',
       status: true,
@@ -28,7 +25,6 @@ class HostProvider with ChangeNotifier {
       lastOffline: DateTime.now(),
     ),
     Host(
-      id: 4,
       hostname: 'Google DNS',
       ip: '8.8.8.8',
       status: true,
@@ -36,7 +32,6 @@ class HostProvider with ChangeNotifier {
       lastOffline: DateTime.now(),
     ),
     Host(
-      id: 5,
       hostname: 'Test Host',
       ip: '192.168.1.1',
       status: true,

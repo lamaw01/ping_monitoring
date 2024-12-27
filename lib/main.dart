@@ -56,7 +56,8 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    timer = Timer.periodic(const Duration(seconds: 10), (Timer t) => setState(() {}));
+    timer = Timer.periodic(const Duration(seconds: 60), (Timer t) => setState(() {}));
+    
   }
 
   @override
