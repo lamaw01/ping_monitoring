@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:ping_monitoring/host_provider.dart';
 import 'package:ping_monitoring/host.dart';
 import 'package:provider/provider.dart';
@@ -50,29 +51,21 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  late Timer timer;
+
+  @override
+  void initState() {
+    super.initState();
+    timer = Timer.periodic(const Duration(seconds: 10), (Timer t) => setState(() {}));
+  }
+
   @override
   Widget build(BuildContext context) {
-    // final dataProvider = Provider.of<DataProvider>(context, listen: false);
-    // final hosts = Provider.of<DataProvider>(context).hosts;
-
     return Scaffold(
       appBar: AppBar(
         elevation: 0.0,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
-        // actions: [
-        // IconButton(
-        //   onPressed: () async {
-        //     final result = await shell.run('''
-
-        //     @echo off & ping -n 1 -4 172.21.2.39 | FindStr "TTL" >nul && (echo win) || (echo fail)
-
-        //     ''');
-        //     log(result.outText);
-        //   },
-        //   icon: const Icon(Icons.settings),
-        // ),
-        // ],
       ),
       drawer: Drawer(
         child: Column(
@@ -98,34 +91,6 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
-      // body: GridView.count(
-      //   childAspectRatio: (1.75 / 1),
-      //   crossAxisCount: 7,
-      //   children: List.generate(200, (index) {
-      //     return Container(
-      //       color: index % 2 == 1 ? Colors.red : Colors.green,
-      //       margin: const EdgeInsets.all(3.0),
-      //       padding: const EdgeInsets.all(3.0),
-      //       child: Center(
-      //         child: Column(
-      //           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      //           children: [
-      //             if (index % 2 == 1) ...[
-      //               const Text('Google.com', style: TextStyle(fontSize: 18.0, color: Colors.white)),
-      //               const Text('8.8.8.8', style: TextStyle(fontSize: 16.0, color: Colors.white)),
-      //               const Text('Last Online: 1 hour', style: TextStyle(fontSize: 14.0, color: Colors.white)),
-      //             ] else ...[
-      //               const Text('AD Main', style: TextStyle(fontSize: 18.0, color: Colors.white)),
-      //               const Text('172.21.3.39', style: TextStyle(fontSize: 16.0, color: Colors.white)),
-      //               const Text('Last Offline: September 12, 2024',
-      //                   style: TextStyle(fontSize: 14.0, color: Colors.white)),
-      //             ],
-      //           ],
-      //         ),
-      //       ),
-      //     );
-      //   }),
-      // ),
       body: Consumer<HostProvider>(
         builder: (context, provider, child) {
           return GridView.builder(
@@ -135,8 +100,8 @@ class _MyHomePageState extends State<MyHomePage> {
               return GridTile(
                 child: InkWell(
                   onTap: () {
-                    // dataProvider.changeIp(index, '192.168.1.1');
                     provider.changeStatus(index, !provider.hosts[index].status);
+                    provider.changeLastOffline(index, DateTime.now());
                   },
                   child: HostWidget(
                     host: provider.hosts[index],
@@ -144,27 +109,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     dataProvider: provider,
                   ),
                 ),
-                // child: Container(
-                //   margin: const EdgeInsets.all(3.0),
-                //   padding: const EdgeInsets.all(3.0),
-                //   color: hosts[index].status ? Colors.green : Colors.red,
-                //   child: Center(
-                //     child: Column(
-                //       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                //       children: [
-                //         Text(hosts[index].hostname, style: const TextStyle(fontSize: 18.0, color: Colors.white)),
-                //         Text(hosts[index].ip, style: const TextStyle(fontSize: 16.0, color: Colors.white)),
-                //         if (hosts[index].status) ...[
-                //           Text("Last Offline: ${hosts[index].lastOffline}",
-                //               style: const TextStyle(fontSize: 14.0, color: Colors.white)),
-                //         ] else ...[
-                //           Text("Last Online: ${hosts[index].lastOnline}",
-                //               style: const TextStyle(fontSize: 14.0, color: Colors.white)),
-                //         ],
-                //       ],
-                //     ),
-                //   ),
-                // ),
               );
             },
           );
@@ -195,32 +139,39 @@ class HostWidget extends StatefulWidget {
 class _HostWidgetState extends State<HostWidget> {
   late Timer timer;
   final dateFormat = DateFormat('yyyy/MM/dd HH:mm:ss');
+  final currentTime = DateTime.now();
 
-  final shell = Shell(
+  final _shell = Shell(
       options: ShellOptions(
           verbose: false, noStderrResult: false, noStdoutResult: false, commandVerbose: false, commentVerbose: false));
+
+  String _timeAge(DateTime dateTime) {
+    return Jiffy.parseFromDateTime(dateTime).from(Jiffy.parseFromDateTime(DateTime.now()));
+  }
 
   @override
   void initState() {
     super.initState();
-    final String ip = widget.host.ip;
-    final String hostname = widget.host.hostname;
-    final bool status = widget.host.status;
 
     timer = Timer.periodic(const Duration(seconds: 10), (Timer t) async {
-      final result = await shell.run('''
+      final result = await _shell.run('''
 
-      @echo off & ping -n 1 -4 $ip | FindStr "TTL" >nul && (echo win) || (echo fail)
+      @echo off & ping -n 1 -4 ${widget.host.ip} | FindStr "TTL" >nul && (echo win) || (echo fail)
 
       ''');
 
-      log('${result.outText} - $ip - $hostname - $status');
-
-      if (result.outText == 'fail') {
+      // If failed ping change status to false
+      if (result.outText == 'fail' && widget.host.status) {
         widget.dataProvider.changeStatus(widget.index, false);
-      } else if (widget.dataProvider.hosts[widget.index].status) {
-        widget.dataProvider.changeStatus(widget.index, true);
+        widget.dataProvider.changeLastOnline(widget.index, currentTime);
       }
+      // If success ping change status to true
+      else if (result.outText == 'win' && widget.host.status == false) {
+        widget.dataProvider.changeStatus(widget.index, true);
+        widget.dataProvider.changeLastOffline(widget.index, currentTime);
+      }
+
+      log('${result.outText} - ${widget.host.ip} - ${widget.host.hostname} - ${widget.host.status}');
     });
   }
 
@@ -243,10 +194,10 @@ class _HostWidgetState extends State<HostWidget> {
             Text(widget.host.hostname, style: const TextStyle(fontSize: 18.0, color: Colors.white)),
             Text(widget.host.ip, style: const TextStyle(fontSize: 16.0, color: Colors.white)),
             if (widget.host.status) ...[
-              Text("Last Offline: ${dateFormat.format(widget.host.lastOffline)}",
+              Text("Last Offline: ${_timeAge(widget.host.lastOffline)}",
                   style: const TextStyle(fontSize: 14.0, color: Colors.white)),
             ] else ...[
-              Text("Last Online: ${dateFormat.format(widget.host.lastOffline)}",
+              Text("Last Online: ${_timeAge(widget.host.lastOnline)}",
                   style: const TextStyle(fontSize: 14.0, color: Colors.white)),
             ],
           ],

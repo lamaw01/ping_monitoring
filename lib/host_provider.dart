@@ -36,7 +36,7 @@ class HostProvider with ChangeNotifier {
       lastOffline: DateTime.now(),
     ),
     Host(
-      id: 4,
+      id: 5,
       hostname: 'Test Host',
       ip: '192.168.1.1',
       status: true,
@@ -54,6 +54,16 @@ class HostProvider with ChangeNotifier {
 
   void changeIp(int index, String ip) {
     _hosts[index].ip = ip;
+    notifyListeners();
+  }
+
+  void changeLastOffline(int index, DateTime dateTime) {
+    _hosts[index].lastOffline = dateTime;
+    notifyListeners();
+  }
+
+  void changeLastOnline(int index, DateTime dateTime) {
+    _hosts[index].lastOnline = dateTime;
     notifyListeners();
   }
 }
