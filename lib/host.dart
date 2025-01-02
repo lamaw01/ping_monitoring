@@ -1,15 +1,14 @@
-class Host {
-  String hostname;
-  String ip;
-  bool status;
-  DateTime lastOnline;
-  DateTime lastOffline;
+import 'package:realm/realm.dart'; // import realm package
 
-  Host({
-    required this.hostname,
-    required this.ip,
-    required this.lastOnline,
-    required this.lastOffline,
-    required this.status,
-  });
+part 'host.realm.dart'; // declare a part file.
+
+@RealmModel()
+class _Host {
+  @PrimaryKey()
+  late ObjectId id;
+  late String hostname;
+  late String ip;
+  late bool status;
+  late DateTime lastOnline;
+  late DateTime lastOffline;
 }

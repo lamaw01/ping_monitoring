@@ -52,12 +52,70 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late Timer timer;
+  Future<void> _showAddDialog() async {
+    final nameController = TextEditingController();
+    final counterController = TextEditingController();
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add new host'),
+          content: SizedBox(
+            // height: 200.0,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    labelText: "Hostname",
+                    filled: true,
+                    // hintStyle: TextStyle(color: Colors.grey[800]),
+                    // hintText: "Name..",
+                    fillColor: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 10.0),
+                TextField(
+                  controller: counterController,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    labelText: "IP",
+                    filled: true,
+                    // hintStyle: TextStyle(color: Colors.grey[800]),
+                    // hintText: "Counter..",
+                    fillColor: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
     super.initState();
+    // Provider.of<HostProvider>(context, listen: false).deleteAllHost();
     timer = Timer.periodic(const Duration(seconds: 60), (Timer t) => setState(() {}));
-    
   }
 
   @override
@@ -67,6 +125,12 @@ class _MyHomePageState extends State<MyHomePage> {
         elevation: 0.0,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
+        // actions: [
+        //   IconButton(
+        //     icon: const Icon(Icons.add),
+        //     onPressed: () {},
+        //   )
+        // ],
       ),
       drawer: Drawer(
         child: Column(
@@ -101,9 +165,11 @@ class _MyHomePageState extends State<MyHomePage> {
               return GridTile(
                 child: InkWell(
                   onTap: () {
-                    provider.changeStatus(index, !provider.hosts[index].status);
-                    provider.changeLastOffline(index, DateTime.now());
+                    // provider.updateHost(provider.hosts[index], status: true, lastOffline: DateTime.now());
                   },
+                  // onLongPress: () {
+                  //   provider.deleteHost(provider.hosts[index]);
+                  // },
                   child: HostWidget(
                     host: provider.hosts[index],
                     index: index,
@@ -113,6 +179,12 @@ class _MyHomePageState extends State<MyHomePage> {
               );
             },
           );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () {
+          _showAddDialog();
         },
       ),
     );
@@ -163,13 +235,11 @@ class _HostWidgetState extends State<HostWidget> {
 
       // If failed ping change status to false
       if (result.outText == 'fail' && widget.host.status) {
-        widget.dataProvider.changeStatus(widget.index, false);
-        widget.dataProvider.changeLastOnline(widget.index, currentTime);
+        widget.dataProvider.updateHost(widget.host, status: false, lastOnline: currentTime);
       }
       // If success ping change status to true
       else if (result.outText == 'win' && widget.host.status == false) {
-        widget.dataProvider.changeStatus(widget.index, true);
-        widget.dataProvider.changeLastOffline(widget.index, currentTime);
+        widget.dataProvider.updateHost(widget.host, status: true, lastOffline: currentTime);
       }
 
       log('${result.outText} - ${widget.host.ip} - ${widget.host.hostname} - ${widget.host.status}');
