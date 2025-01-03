@@ -59,13 +59,13 @@ class HostProvider with ChangeNotifier {
   //   notifyListeners();
   // }
 
-  void deleteAllHost() {
-    _realmHost.write(() {
-      _realmHost.deleteAll<Host>();
-    });
-    log('_realmHost length ${hosts.length}');
-    notifyListeners();
-  }
+  // void deleteAllHost() {
+  //   _realmHost.write(() {
+  //     _realmHost.deleteAll<Host>();
+  //   });
+  //   log('_realmHost length ${hosts.length}');
+  //   notifyListeners();
+  // }
 
   void addHost(Host host) {
     final where = hosts.where((e) => e.ip == host.ip);

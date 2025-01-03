@@ -40,6 +40,8 @@ dependencies:
   intl: ^0.20.1
   jiffy: ^6.3.2
   realm: ^20.0.0
+  auto_size_text: ^3.0.0
+  shared_preferences: ^2.3.5
 
 dev_dependencies:
   flutter_test:

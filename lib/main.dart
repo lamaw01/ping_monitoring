@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -9,8 +10,10 @@ import 'package:ping_monitoring/host_provider.dart';
 import 'package:ping_monitoring/host.dart';
 import 'package:provider/provider.dart';
 import 'package:process_run/shell.dart';
+import 'package:realm/realm.dart';
 
 import 'custom_grid_delegate.dart';
+import 'settings_provider.dart';
 
 void main() {
   runApp(
@@ -18,6 +21,9 @@ void main() {
       providers: [
         ChangeNotifierProvider<HostProvider>(
           create: (_) => HostProvider(),
+        ),
+        ChangeNotifierProvider<SettingsProvider>(
+          create: (_) => SettingsProvider(),
         ),
       ],
       child: const MyApp(),
@@ -52,9 +58,10 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late Timer timer;
+
   Future<void> _showAddDialog() async {
-    final nameController = TextEditingController();
-    final counterController = TextEditingController();
+    final hostnameController = TextEditingController();
+    final ipController = TextEditingController();
 
     return showDialog<void>(
       context: context,
@@ -62,43 +69,167 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Add new host'),
-          content: SizedBox(
-            // height: 200.0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    labelText: "Hostname",
-                    filled: true,
-                    // hintStyle: TextStyle(color: Colors.grey[800]),
-                    // hintText: "Name..",
-                    fillColor: Colors.white70,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              TextField(
+                controller: hostnameController,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
                   ),
+                  labelText: "Hostname",
+                  filled: true,
+                  fillColor: Colors.white70,
                 ),
-                const SizedBox(height: 10.0),
-                TextField(
-                  controller: counterController,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    labelText: "IP",
-                    filled: true,
-                    // hintStyle: TextStyle(color: Colors.grey[800]),
-                    // hintText: "Counter..",
-                    fillColor: Colors.white70,
+              ),
+              const SizedBox(height: 10.0),
+              TextField(
+                controller: ipController,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
                   ),
+                  labelText: "IP",
+                  filled: true,
+                  fillColor: Colors.white70,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           actions: <Widget>[
+            TextButton(
+              child: const Text('Add'),
+              onPressed: () {
+                Provider.of<HostProvider>(context, listen: false).addHost(Host(
+                  ObjectId(),
+                  hostnameController.text,
+                  ipController.text,
+                  true,
+                  DateTime.now(),
+                  DateTime.now(),
+                ));
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showDetailDialog(Host host) async {
+    final hostnameController = TextEditingController(text: host.hostname);
+    final ipController = TextEditingController(text: host.ip);
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Host detail'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              TextField(
+                controller: hostnameController,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  labelText: "Hostname",
+                  filled: true,
+                  fillColor: Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 10.0),
+              TextField(
+                controller: ipController,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  labelText: "IP",
+                  filled: true,
+                  fillColor: Colors.white70,
+                ),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                Provider.of<HostProvider>(context, listen: false).deleteHost(host);
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Update'),
+              onPressed: () {
+                Provider.of<HostProvider>(context, listen: false).updateHost(
+                  host,
+                  hostname: hostnameController.text,
+                  ip: ipController.text,
+                );
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showSettingsDialog() async {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final intervalController = TextEditingController(text: settings.interval.toString());
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Settings'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              TextField(
+                controller: intervalController,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  labelText: "Ping Interval",
+                  filled: true,
+                  fillColor: Colors.white70,
+                ),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Ok'),
+              onPressed: () {
+                settings.updateInterval(intervalController.text);
+                Navigator.of(context).pop();
+              },
+            ),
             TextButton(
               child: const Text('Cancel'),
               onPressed: () {
@@ -114,7 +245,6 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    // Provider.of<HostProvider>(context, listen: false).deleteAllHost();
     timer = Timer.periodic(const Duration(seconds: 60), (Timer t) => setState(() {}));
   }
 
@@ -125,12 +255,14 @@ class _MyHomePageState extends State<MyHomePage> {
         elevation: 0.0,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
-        // actions: [
-        //   IconButton(
-        //     icon: const Icon(Icons.add),
-        //     onPressed: () {},
-        //   )
-        // ],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              _showSettingsDialog();
+            },
+          )
+        ],
       ),
       drawer: Drawer(
         child: Column(
@@ -159,17 +291,14 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Consumer<HostProvider>(
         builder: (context, provider, child) {
           return GridView.builder(
-            gridDelegate: CustomGridDelegate(dimension: 240.0),
+            gridDelegate: CustomGridDelegate(dimension: 200.0),
             itemCount: provider.hosts.length,
             itemBuilder: (contex, index) {
               return GridTile(
                 child: InkWell(
                   onTap: () {
-                    // provider.updateHost(provider.hosts[index], status: true, lastOffline: DateTime.now());
+                    _showDetailDialog(provider.hosts[index]);
                   },
-                  // onLongPress: () {
-                  //   provider.deleteHost(provider.hosts[index]);
-                  // },
                   child: HostWidget(
                     host: provider.hosts[index],
                     index: index,
@@ -225,8 +354,13 @@ class _HostWidgetState extends State<HostWidget> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Provider.of<SettingsProvider>(context, listen: false).initSettings();
+    });
 
-    timer = Timer.periodic(const Duration(seconds: 10), (Timer t) async {
+    final settings = Provider.of<SettingsProvider>(context, listen: false).interval;
+
+    timer = Timer.periodic(Duration(seconds: settings), (Timer t) async {
       final result = await _shell.run('''
 
       @echo off & ping -n 1 -4 ${widget.host.ip} | FindStr "TTL" >nul && (echo win) || (echo fail)
@@ -262,14 +396,28 @@ class _HostWidgetState extends State<HostWidget> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            Text(widget.host.hostname, style: const TextStyle(fontSize: 18.0, color: Colors.white)),
-            Text(widget.host.ip, style: const TextStyle(fontSize: 16.0, color: Colors.white)),
+            AutoSizeText(
+              widget.host.hostname,
+              style: const TextStyle(fontSize: 18.0, color: Colors.white),
+              maxLines: 2,
+            ),
+            AutoSizeText(
+              widget.host.ip,
+              style: const TextStyle(fontSize: 16.0, color: Colors.white),
+              maxLines: 2,
+            ),
             if (widget.host.status) ...[
-              Text("Last Offline: ${_timeAge(widget.host.lastOffline)}",
-                  style: const TextStyle(fontSize: 14.0, color: Colors.white)),
+              AutoSizeText(
+                "Last Offline: ${_timeAge(widget.host.lastOffline)}",
+                style: const TextStyle(fontSize: 14.0, color: Colors.white),
+                maxLines: 2,
+              ),
             ] else ...[
-              Text("Last Online: ${_timeAge(widget.host.lastOnline)}",
-                  style: const TextStyle(fontSize: 14.0, color: Colors.white)),
+              AutoSizeText(
+                "Last Online: ${_timeAge(widget.host.lastOnline)}",
+                style: const TextStyle(fontSize: 14.0, color: Colors.white),
+                maxLines: 2,
+              ),
             ],
           ],
         ),
