@@ -31,6 +31,9 @@ void main() {
   );
 }
 
+// int _pingInterval = 10;
+// double _uiSize = 150.0;
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
@@ -197,7 +200,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _showSettingsDialog() async {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final intervalController = TextEditingController(text: settings.interval.toString());
+    // final intervalController = TextEditingController(text: settings.interval.toString());
+    const List<int> pingIntervalValueList = <int>[10, 20, 30, 60];
+    int pingIntervalValue = settings.pingInterval;
+
+    const List<double> uiSizeValueList = <double>[150.0, 175.0, 200.0, 225.0, 250.0, 275.0, 300.0];
+    double uiSizeValue = settings.uiSize;
 
     return showDialog<void>(
       context: context,
@@ -205,28 +213,99 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Settings'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              TextField(
-                controller: intervalController,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
+          content: StatefulBuilder(
+            builder: ((BuildContext context, StateSetter setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // TextField(
+                  //   controller: intervalController,
+                  //   decoration: InputDecoration(
+                  //     border: OutlineInputBorder(
+                  //       borderRadius: BorderRadius.circular(8.0),
+                  //     ),
+                  //     labelText: "Ping Interval",
+                  //     filled: true,
+                  //     fillColor: Colors.white70,
+                  //   ),
+                  // ),
+                  Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('Interval'),
+                      const SizedBox(width: 5.0),
+                      DropdownButtonHideUnderline(
+                        child: DropdownButton<int>(
+                          style: const TextStyle(color: Colors.black),
+                          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                          borderRadius: BorderRadius.circular(5.0),
+                          value: pingIntervalValue,
+                          onChanged: (value) {
+                            setState(() {
+                              pingIntervalValue = value ?? pingIntervalValue;
+                            });
+                          },
+                          items: pingIntervalValueList.map<DropdownMenuItem<int>>((int value) {
+                            return DropdownMenuItem<int>(
+                              value: value,
+                              child: Text(
+                                value.toString(),
+                                style: const TextStyle(fontSize: 20.0),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
                   ),
-                  labelText: "Ping Interval",
-                  filled: true,
-                  fillColor: Colors.white70,
-                ),
-              ),
-            ],
+                  const SizedBox(height: 5.0),
+                  Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('UI size'),
+                      const SizedBox(width: 5.0),
+                      DropdownButtonHideUnderline(
+                        child: DropdownButton<double>(
+                          style: const TextStyle(color: Colors.black),
+                          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                          borderRadius: BorderRadius.circular(5.0),
+                          value: uiSizeValue,
+                          onChanged: (value) {
+                            setState(() {
+                              uiSizeValue = value ?? uiSizeValue;
+                            });
+                          },
+                          items: uiSizeValueList.map<DropdownMenuItem<double>>((double value) {
+                            return DropdownMenuItem<double>(
+                              value: value,
+                              child: Text(
+                                value.toString(),
+                                style: const TextStyle(fontSize: 20.0),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }),
           ),
           actions: <Widget>[
             TextButton(
               child: const Text('Ok'),
-              onPressed: () {
-                settings.updateInterval(intervalController.text);
+              onPressed: () async {
+                // settings.updateInterval(intervalController.text);
+                await settings.updateInterval(pingIntervalValue);
+                await settings.updateUiSize(uiSizeValue);
+                // _pingInterval = pingIntervalValue;
+                // _uiSize = uiSizeValue;
+                debugPrint('_pingInterval ${settings.pingInterval} || _uiSize ${settings.uiSize}');
+                // ignore: use_build_context_synchronously
                 Navigator.of(context).pop();
               },
             ),
@@ -250,6 +329,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         elevation: 0.0,
@@ -291,7 +372,7 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Consumer<HostProvider>(
         builder: (context, provider, child) {
           return GridView.builder(
-            gridDelegate: CustomGridDelegate(dimension: 200.0),
+            gridDelegate: CustomGridDelegate(dimension: settings.uiSize),
             itemCount: provider.hosts.length,
             itemBuilder: (contex, index) {
               return GridTile(
@@ -357,27 +438,6 @@ class _HostWidgetState extends State<HostWidget> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Provider.of<SettingsProvider>(context, listen: false).initSettings();
     });
-
-    final settings = Provider.of<SettingsProvider>(context, listen: false).interval;
-
-    timer = Timer.periodic(Duration(seconds: settings), (Timer t) async {
-      final result = await _shell.run('''
-
-      @echo off & ping -n 1 -4 ${widget.host.ip} | FindStr "TTL" >nul && (echo win) || (echo fail)
-
-      ''');
-
-      // If failed ping change status to false
-      if (result.outText == 'fail' && widget.host.status) {
-        widget.dataProvider.updateHost(widget.host, status: false, lastOnline: currentTime);
-      }
-      // If success ping change status to true
-      else if (result.outText == 'win' && widget.host.status == false) {
-        widget.dataProvider.updateHost(widget.host, status: true, lastOffline: currentTime);
-      }
-
-      log('${result.outText} - ${widget.host.ip} - ${widget.host.hostname} - ${widget.host.status}');
-    });
   }
 
   @override
@@ -388,40 +448,61 @@ class _HostWidgetState extends State<HostWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(3.0),
-      padding: const EdgeInsets.all(3.0),
-      color: widget.host.status ? Colors.green : Colors.red,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            AutoSizeText(
-              widget.host.hostname,
-              style: const TextStyle(fontSize: 18.0, color: Colors.white),
-              maxLines: 2,
-            ),
-            AutoSizeText(
-              widget.host.ip,
-              style: const TextStyle(fontSize: 16.0, color: Colors.white),
-              maxLines: 2,
-            ),
-            if (widget.host.status) ...[
+    return Consumer<SettingsProvider>(builder: (context, provider, child) {
+      timer = Timer.periodic(Duration(seconds: provider.pingInterval), (Timer t) async {
+        final result = await _shell.run('''
+
+      @echo off & ping -n 1 -4 ${widget.host.ip} | FindStr "TTL" >nul && (echo win) || (echo fail)
+
+      ''');
+
+        // If failed ping change status to false
+        if (result.outText == 'fail' && widget.host.status) {
+          widget.dataProvider.updateHost(widget.host, status: false, lastOnline: currentTime);
+        }
+        // If success ping change status to true
+        else if (result.outText == 'win' && widget.host.status == false) {
+          widget.dataProvider.updateHost(widget.host, status: true, lastOffline: currentTime);
+        }
+
+        log('${result.outText} - ${widget.host.ip} - ${widget.host.hostname} - ${widget.host.status}');
+      });
+
+      return Container(
+        margin: const EdgeInsets.all(3.0),
+        padding: const EdgeInsets.all(3.0),
+        color: widget.host.status ? Colors.green : Colors.red,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
               AutoSizeText(
-                "Last Offline: ${_timeAge(widget.host.lastOffline)}",
-                style: const TextStyle(fontSize: 14.0, color: Colors.white),
+                widget.host.hostname,
+                style: const TextStyle(fontSize: 18.0, color: Colors.white),
                 maxLines: 2,
               ),
-            ] else ...[
               AutoSizeText(
-                "Last Online: ${_timeAge(widget.host.lastOnline)}",
-                style: const TextStyle(fontSize: 14.0, color: Colors.white),
+                widget.host.ip,
+                style: const TextStyle(fontSize: 16.0, color: Colors.white),
                 maxLines: 2,
               ),
+              if (widget.host.status) ...[
+                AutoSizeText(
+                  "Last Offline: ${_timeAge(widget.host.lastOffline)}",
+                  style: const TextStyle(fontSize: 14.0, color: Colors.white),
+                  maxLines: 2,
+                ),
+              ] else ...[
+                AutoSizeText(
+                  "Last Online: ${_timeAge(widget.host.lastOnline)}",
+                  style: const TextStyle(fontSize: 14.0, color: Colors.white),
+                  maxLines: 2,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
