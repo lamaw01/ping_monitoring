@@ -22,7 +22,7 @@ class HostWidget extends StatefulWidget {
 }
 
 class _HostWidgetState extends State<HostWidget> {
-  final _currentTime = DateTime.now();
+  // final _currentTime = DateTime.now();
 
   final _shell = Shell(
       options: ShellOptions(
@@ -41,11 +41,13 @@ class _HostWidgetState extends State<HostWidget> {
 
     // If failed ping change status to false
     if (result.outText == 'fail' && widget.host.status) {
-      widget.dataProvider.updateHost(widget.host, status: false, lastOnline: _currentTime);
+      widget.dataProvider
+          .updateHost(widget.host, status: false, lastOnline: DateTime.now(), lastOffline: DateTime.now());
     }
     // If success ping change status to true
     else if (result.outText == 'win' && widget.host.status == false) {
-      widget.dataProvider.updateHost(widget.host, status: true, lastOffline: _currentTime);
+      widget.dataProvider
+          .updateHost(widget.host, status: true, lastOffline: DateTime.now(), lastOnline: DateTime.now());
     }
 
     log('${result.outText} - ${widget.host.ip} - ${widget.host.hostname} - ${widget.host.status}');
