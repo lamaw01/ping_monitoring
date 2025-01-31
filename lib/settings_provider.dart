@@ -11,14 +11,6 @@ class SettingsProvider with ChangeNotifier {
   double _uiSize = 150.0;
   double get uiSize => _uiSize;
 
-  // late Timer timer;
-
-  // void initTimer(AsyncCallback callBack) {
-  //   timer = Timer.periodic(Duration(seconds: _pingInterval), (Timer _) async {
-  //     callBack();
-  //   });
-  // }
-
   void showSettings() {
     log('_pingInterval $pingInterval || _uiSize $uiSize');
   }
@@ -26,6 +18,7 @@ class SettingsProvider with ChangeNotifier {
   Future<void> initSettings() async {
     await getInterval();
     await getUiSize();
+    showSettings();
   }
 
   Future<int> getInterval() async {

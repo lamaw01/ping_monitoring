@@ -42,6 +42,7 @@ dependencies:
   realm: ^20.0.0
   auto_size_text: ^3.0.0
   shared_preferences: ^2.3.5
+  timer_builder: ^2.0.0
 
 dev_dependencies:
   flutter_test:

@@ -11,17 +11,13 @@ import 'host_widget.dart';
 import 'settings_provider.dart';
 
 class Home extends StatefulWidget {
-  const Home({
-    super.key,
-  });
+  const Home({super.key});
 
   @override
   State<Home> createState() => _HomeState();
 }
 
 class _HomeState extends State<Home> {
-  late Timer timer;
-
   Future<void> _showAddDialog() async {
     final hostnameController = TextEditingController();
     final ipController = TextEditingController();
@@ -246,11 +242,10 @@ class _HomeState extends State<Home> {
           actions: <Widget>[
             TextButton(
               child: const Text('Ok'),
-              onPressed: () async {
-                await settings.updateInterval(pingIntervalValue);
-                await settings.updateUiSize(uiSizeValue);
+              onPressed: () {
+                settings.updateInterval(pingIntervalValue);
+                settings.updateUiSize(uiSizeValue);
                 debugPrint('_pingInterval ${settings.pingInterval} || _uiSize ${settings.uiSize}');
-                // ignore: use_build_context_synchronously
                 Navigator.of(context).pop();
               },
             ),
@@ -267,17 +262,6 @@ class _HomeState extends State<Home> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    // timer = Timer.periodic(
-    //   const Duration(seconds: 60),
-    //   (Timer t) => setState(() {
-    //     debugPrint('Reset');
-    //   }),
-    // );
-  }
-
-  @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
 
@@ -289,43 +273,18 @@ class _HomeState extends State<Home> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () async {
-              await _showSettingsDialog();
-              setState(() {});
+            onPressed: () {
+              _showSettingsDialog();
             },
           )
         ],
-      ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            Card(
-              child: ListTile(
-                title: const Text('7Seas'),
-                onTap: () {},
-              ),
-            ),
-            Card(
-              child: ListTile(
-                title: const Text('Dahilayan'),
-                onTap: () {},
-              ),
-            ),
-            Card(
-              child: ListTile(
-                title: const Text('CCTVs'),
-                onTap: () {},
-              ),
-            ),
-          ],
-        ),
       ),
       body: Consumer<HostProvider>(
         builder: (context, provider, child) {
           return GridView.builder(
             gridDelegate: CustomGridDelegate(dimension: settings.uiSize),
             itemCount: provider.hosts.length,
-            itemBuilder: (contex, index) {
+            itemBuilder: (context, index) {
               return GridTile(
                 child: InkWell(
                   onTap: () {
@@ -333,7 +292,6 @@ class _HomeState extends State<Home> {
                   },
                   child: HostWidget(
                     host: provider.hosts[index],
-                    index: index,
                     dataProvider: provider,
                   ),
                 ),

@@ -17,11 +17,12 @@ class _LoadingState extends State<Loading> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Provider.of<SettingsProvider>(context, listen: false).initSettings().then((_) async {
-        await Future.delayed(const Duration(milliseconds: 1000));
-        return Navigator.push(
-          // ignore: use_build_context_synchronously
-          context,
-          MaterialPageRoute(builder: (context) => const Home()),
+        await Future.delayed(const Duration(milliseconds: 1000)).then(
+          (_) => Navigator.pushReplacement(
+            // ignore: use_build_context_synchronously
+            context,
+            MaterialPageRoute(builder: (context) => const Home()),
+          ),
         );
       });
     });
